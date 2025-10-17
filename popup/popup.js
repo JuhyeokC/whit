@@ -1,4 +1,4 @@
-// popup/popup.js
+// Messages
 const MSG = {
   START_SELECTION: 'WHIT_START_SELECTION',
   GET_LATEST_IMAGE: 'WHIT_GET_LATEST_IMAGE',
@@ -9,6 +9,7 @@ const MSG = {
   CLEAR_HISTORY: 'WHIT_CLEAR_HISTORY',
 };
 
+// Shortcuts
 const $ = (sel) => document.querySelector(sel);
 
 // Elements
@@ -36,8 +37,10 @@ document.querySelectorAll('.tone').forEach((btn) => {
   });
 });
 
+// Latest image payload
 let latestImagePayload = null;
 
+// Init
 init().catch(console.error);
 
 async function init() {
@@ -53,6 +56,7 @@ async function init() {
   await renderHistory();
 }
 
+// Tab wiring
 function wireTabs() {
   const tabBtns = document.querySelectorAll('.tab-btn');
   tabBtns.forEach((b) => {
@@ -68,6 +72,7 @@ function wireTabs() {
   });
 }
 
+// Settings UI 초기화
 async function hydrateSettingsUI() {
   const { WHIT_MODEL = 'gpt-4o-mini' } = await chrome.storage.local.get([
     'WHIT_MODEL',
@@ -78,6 +83,7 @@ async function hydrateSettingsUI() {
   });
 }
 
+// 이미지 선택 시작
 async function onClickSelect() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
   if (tab?.id)
@@ -85,6 +91,7 @@ async function onClickSelect() {
   window.close();
 }
 
+// 최신 이미지 불러오기
 async function loadLatest() {
   const resp = await chrome.runtime.sendMessage({ type: MSG.GET_LATEST_IMAGE });
   if (resp?.ok && resp.payload?.imageDataUrl) {
@@ -97,6 +104,7 @@ async function loadLatest() {
   }
 }
 
+// 이미지 분석
 async function onClickAnalyze() {
   if (!latestImagePayload?.imageDataUrl) return;
 
@@ -121,18 +129,28 @@ async function onClickAnalyze() {
     0.8
   );
 
+  // 분석 요청
   const resp = await chrome.runtime.sendMessage({
     type: MSG.ANALYZE_REQUEST,
     dataUrl: slim,
     prompt,
+    // ✅ 캐시 키에 포함될 톤 전달
+    tone: currentTone,
   });
 
+  // 결과 처리
   if (resp?.ok) {
     const html = renderAnalysisResult(resp.result);
     analysisContent.innerHTML = html;
-    // 히스토리 저장
-    await saveHistoryItem(latestImagePayload.imageDataUrl, resp.result);
-    await renderHistory();
+
+    // ✅ 캐시 적중이 아니면 히스토리에 저장 (톤 정보 포함)
+    if (!resp.cached) {
+      await saveHistoryItem(latestImagePayload.imageDataUrl, resp.result, {
+        model: resp.model,
+        tone: resp.tone || currentTone,
+      });
+      await renderHistory();
+    }
   } else {
     analysisContent.innerHTML = `<div class="result-line"><span class="ico">⚠️</span><div>${escapeHtml(
       resp?.error || '분석 실패'
@@ -140,6 +158,7 @@ async function onClickAnalyze() {
   }
 }
 
+// 이미지 저장
 async function onClickSave() {
   if (!latestImagePayload?.imageDataUrl) return;
   const ts = new Date().toISOString().replace(/[:.]/g, '-');
@@ -150,6 +169,7 @@ async function onClickSave() {
   });
 }
 
+// 전체 히스토리 삭제
 async function onClickClearHistory() {
   const yes = confirm('모든 기록을 삭제할까요? (되돌릴 수 없음)');
   if (!yes) return;
@@ -158,16 +178,19 @@ async function onClickClearHistory() {
   else alert('삭제 실패');
 }
 
-async function saveHistoryItem(dataUrl, resultText = '') {
+// 히스토리 항목 저장
+async function saveHistoryItem(dataUrl, resultText = '', meta = {}) {
   const item = {
     id: crypto.randomUUID(),
     createdAt: Date.now(),
     thumb: dataUrl,
     result: resultText,
+    meta, // { model, tone } 등 저장
   };
   await chrome.runtime.sendMessage({ type: MSG.SAVE_HISTORY_ITEM, item });
 }
 
+// 히스토리 항목 삭제
 async function deleteHistoryItem(id) {
   const resp = await chrome.runtime.sendMessage({
     type: MSG.DELETE_HISTORY_ITEM,
@@ -177,6 +200,7 @@ async function deleteHistoryItem(id) {
   else alert('항목 삭제 실패');
 }
 
+// 히스토리 렌더링
 async function renderHistory() {
   const resp = await chrome.runtime.sendMessage({ type: MSG.GET_HISTORY });
   if (!resp?.ok) return;
@@ -193,15 +217,17 @@ async function renderHistory() {
     el.className = 'history-item';
     const dt = new Date(it.createdAt);
     el.innerHTML = `
-      <button class="del" data-id="${it.id}">삭제</button>
-      <img src="${it.thumb}" alt="thumb"/>
-      <div class="meta">
-        <div>${formatDate(dt)}</div>
-        <div style="margin-top:4px; color:#111827; font-weight:600; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
-          ${escapeHtml(it.result || '분석 결과 없음')}
-        </div>
-      </div>
-    `;
+  <button class="del" data-id="${it.id}">삭제</button>
+  <img src="${it.thumb}" alt="thumb"/>
+  <div class="meta">
+    <div>${formatDate(dt)}${
+      it.meta?.tone ? ` · 톤:${escapeHtml(it.meta.tone)}` : ''
+    }${it.meta?.model ? ` · 모델:${escapeHtml(it.meta.model)}` : ''}</div>
+    <div style="margin-top:4px; color:#111827; font-weight:600; overflow:hidden; text-overflow:ellipsis; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical;">
+      ${escapeHtml(it.result || '분석 결과 없음')}
+    </div>
+  </div>
+`;
     historyList.appendChild(el);
     const delBtn = el.querySelector('.del');
     delBtn.addEventListener('click', (e) => {
@@ -212,8 +238,7 @@ async function renderHistory() {
   });
 }
 
-/* ---------- Helpers ---------- */
-
+// 분석 결과 렌더링
 function renderAnalysisResult(resultText = '') {
   // 간단한 아이콘 매핑
   const mapping = {
@@ -231,12 +256,14 @@ function renderAnalysisResult(resultText = '') {
     .map((s) => s.trim())
     .filter(Boolean);
 
+  // 단일 문장인 경우 전체를 하나의 라인으로 처리
   if (lines.length === 0) {
     return `<div class="result-line"><span class="ico">💬</span><div>${escapeHtml(
       resultText
     )}</div></div>`;
   }
 
+  // 라인별로 아이콘 매핑하여 HTML 생성
   const html = lines
     .map((line) => {
       const key = Object.keys(mapping).find((k) => line.includes(k));
@@ -271,6 +298,7 @@ async function compressDataUrlToJpeg(dataUrl, maxSize = 1280, quality = 0.8) {
   return canvas.toDataURL('image/jpeg', quality);
 }
 
+// 날짜 포맷팅
 function formatDate(d) {
   const y = d.getFullYear();
   const m = String(d.getMonth() + 1).padStart(2, '0');
@@ -280,6 +308,7 @@ function formatDate(d) {
   return `${y}-${m}-${day} ${hh}:${mm}`;
 }
 
+// HTML 이스케이프
 function escapeHtml(str = '') {
   return str.replace(
     /[&<>"']/g,

@@ -4,6 +4,7 @@
   if (window.__WHIT_CONTENT_LOADED__) return;
   window.__WHIT_CONTENT_LOADED__ = true;
 
+  // 메시지 타입
   const MSG = {
     START_SELECTION: 'WHIT_START_SELECTION',
     CANCEL_SELECTION: 'WHIT_CANCEL_SELECTION',
@@ -12,6 +13,7 @@
     SET_LATEST_IMAGE: 'WHIT_SET_LATEST_IMAGE',
   };
 
+  // ---- 영역 선택 UI 및 로직 ----
   let overlay,
     selectionBox,
     selecting = false;
@@ -20,6 +22,7 @@
     currentX = 0,
     currentY = 0;
 
+  // 오버레이 및 선택 박스 생성
   function ensureOverlay() {
     if (overlay) return;
     overlay = document.createElement('div');
@@ -37,6 +40,7 @@
     });
   }
 
+  // 영역 선택 시작
   function startSelection() {
     ensureOverlay();
     overlay.style.display = 'block';
@@ -47,6 +51,7 @@
     document.body.style.cursor = 'crosshair';
   }
 
+  // 영역 선택 종료
   function stopSelection(cancelled = false) {
     if (!overlay) return;
     overlay.style.display = 'none';
@@ -56,6 +61,7 @@
     if (cancelled) chrome.runtime.sendMessage({ type: MSG.CANCEL_SELECTION });
   }
 
+  // 마우스 이벤트 핸들러
   function onMouseDown(e) {
     e.preventDefault();
     selecting = true;
@@ -67,6 +73,7 @@
     updateSelectionBox();
   }
 
+  // 마우스 이동 처리
   function onMouseMove(e) {
     if (!selecting) return;
     currentX = e.clientX;
@@ -74,6 +81,7 @@
     updateSelectionBox();
   }
 
+  // 마우스 업 처리
   function onMouseUp() {
     if (!selecting) return;
     selecting = false;
@@ -82,6 +90,7 @@
     // 사용자가 보는 선택 박스 즉시 숨김 (UX)
     if (selectionBox) selectionBox.style.display = 'none';
 
+    // 너무 작은 영역은 취소 처리
     if (rect.width < 5 || rect.height < 5) {
       stopSelection(true);
       return;
@@ -115,6 +124,7 @@
     })();
   }
 
+  // 선택 영역 정보 계산
   function getRect() {
     const x = Math.min(startX, currentX);
     const y = Math.min(startY, currentY);
@@ -133,6 +143,7 @@
     };
   }
 
+  // 선택 박스 스타일 업데이트
   function updateSelectionBox() {
     const rect = getRect();
     selectionBox.style.left = rect.x + 'px';
@@ -141,6 +152,7 @@
     selectionBox.style.height = rect.height + 'px';
   }
 
+  // 데이터 URL 크롭
   async function cropDataUrl(fullDataUrl, rect) {
     // captureVisibleTab 은 DPR 적용된 "보이는 영역" 픽셀을 반환
     const img = await loadImage(fullDataUrl);
@@ -158,6 +170,7 @@
     return canvas.toDataURL('image/png');
   }
 
+  // 데이터 URL → 이미지 객체 로드
   function loadImage(dataUrl) {
     return new Promise((res, rej) => {
       const img = new Image();
