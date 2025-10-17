@@ -19,7 +19,7 @@
     "downloads"
   ],
   "host_permissions": [
-    "https://whit-proxy.juhyeokc.workers.dev/*"
+    "https://whit-proxy.bos2ablues.workers.dev/*"
   ],
   "icons": {
     "16": "assets/icon16.png",

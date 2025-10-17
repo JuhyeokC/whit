@@ -68,7 +68,7 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           const { dataUrl } = message;
 
           // Cloudflare Worker 프록시 주소 (배포된 URL로 교체)
-          const PROXY_URL = 'https://whit-proxy.juhyeokc.workers.dev/analyze';
+          const PROXY_URL = 'https://whit-proxy.bos2ablues.workers.dev/analyze';
 
           // 선택된 모델 (저장되어 있으면 사용)
           const { WHIT_MODEL = 'gpt-4o-mini' } = await chrome.storage.local.get(
