@@ -1,0 +1,137 @@
+/* 기존 스타일들 ... */
+body {
+  font-family: ui-sans-serif, system-ui, -apple-system, 'Apple SD Gothic Neo',
+    'Noto Sans KR', sans-serif;
+  margin: 0;
+  width: 360px;
+}
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #eee;
+}
+h1 {
+  font-size: 16px;
+  margin: 0;
+}
+.tabs {
+  display: flex;
+  gap: 6px;
+}
+.tab-btn {
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+}
+.tab-btn.active {
+  border-color: #4f46e5;
+  color: #4f46e5;
+}
+main {
+  padding: 12px;
+}
+.tab {
+  display: none;
+}
+.tab.active {
+  display: block;
+}
+#btn-select,
+#btn-analyze,
+#btn-save {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: pointer;
+}
+#btn-analyze {
+  background: #111827;
+}
+#btn-save {
+  background: #059669;
+}
+.preview.hidden {
+  display: none;
+}
+.preview img {
+  max-width: 100%;
+  border-radius: 8px;
+  border: 1px solid #eee;
+}
+.actions {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+.analysis {
+  white-space: pre-wrap;
+  background: #f8fafc;
+  padding: 8px;
+  border-radius: 8px;
+  border: 1px solid #eee;
+  max-height: 160px;
+  overflow: auto;
+}
+.history-list {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+.history-item {
+  border: 1px solid #eee;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+}
+.history-item img {
+  width: 100%;
+  display: block;
+}
+.history-item .meta {
+  padding: 6px;
+  font-size: 11px;
+  color: #374151;
+}
+.hint {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+.history-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+.history-toolbar .danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
+  cursor: pointer;
+}
+.history-item {
+  position: relative;
+}
+.history-item .del {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 6px;
+  background: #111827;
+  color: #fff;
+  font-size: 11px;
+  cursor: pointer;
+  opacity: 0.9;
+}
+.history-item .del:hover {
+  opacity: 1;
+}

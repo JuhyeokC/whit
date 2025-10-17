@@ -1,16 +1,43 @@
 {
   "manifest_version": 3,
-  "name": "My First Extension",
-  "version": "0.0.1",
-  "description": "Test Chrome Extension",
+  "name": "WHIT?",
+  "description": "무엇을 찾으시나요? 드래그만 해보세요! 찾아드립니다!",
+  "version": "0.1.0",
   "action": {
-    "default_popup": "popup.html"
+    "default_title": "WHIT?",
+    "default_popup": "popup/popup.html"
   },
   "background": {
-    "service_worker": "background.js"
+    "service_worker": "background.js",
+    "type": "module"
   },
   "permissions": [
     "activeTab",
-    "scripting"
+    "scripting",
+    "tabs",
+    "storage",
+    "downloads"
+  ],
+  "host_permissions": [
+    "<all_urls>"
+  ],
+  "icons": {
+    "16": "assets/icon16.png",
+    "48": "assets/icon48.png",
+    "128": "assets/icon128.png"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content/content.js"
+      ],
+      "css": [
+        "content/overlay.css"
+      ],
+      "run_at": "document_idle"
+    }
   ]
 }
