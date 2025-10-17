@@ -64,9 +64,45 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
       }
 
       case MSG.ANALYZE_REQUEST: {
-        const { dataUrl } = message;
-        const analysis = `분석 데모: 이미지 길이 ${dataUrl?.length?.toLocaleString()} bytes`;
-        sendResponse({ ok: true, result: analysis });
+        try {
+          const { dataUrl } = message;
+
+          // Cloudflare Worker 프록시 주소 (배포된 URL로 교체)
+          const PROXY_URL = 'https://whit-proxy.juhyeokc.workers.dev/analyze';
+
+          // 선택된 모델 (저장되어 있으면 사용)
+          const { WHIT_MODEL = 'gpt-4o-mini' } = await chrome.storage.local.get(
+            ['WHIT_MODEL']
+          );
+
+          // 프록시로 요청 전송
+          const r = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              dataUrl,
+              model: WHIT_MODEL,
+              prompt:
+                '이 이미지를 분석해줘. 주요 객체/텍스트/브랜드/맥락을 bullet로 간결히 요약해.',
+            }),
+          });
+
+          if (!r.ok) {
+            const text = await r.text();
+            sendResponse({
+              ok: false,
+              error: `Proxy error: ${r.status} ${text}`,
+            });
+            break;
+          }
+
+          const json = await r.json();
+          sendResponse(json);
+        } catch (e) {
+          sendResponse({ ok: false, error: String(e) });
+        }
         break;
       }
 
