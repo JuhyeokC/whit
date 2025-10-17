@@ -19,7 +19,7 @@
     "downloads"
   ],
   "host_permissions": [
-    "<all_urls>"
+    "https://whit-proxy.juhyeokc.workers.dev/*"
   ],
   "icons": {
     "16": "assets/icon16.png",
