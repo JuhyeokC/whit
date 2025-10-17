@@ -78,13 +78,13 @@ chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
           // 프록시로 요청 전송
           const r = await fetch(PROXY_URL, {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
+            headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
               dataUrl,
               model: WHIT_MODEL,
+              // ✅ 프롬프트를 팝업에서 전달된 값으로 사용
               prompt:
+                message.prompt ||
                 '이 이미지를 분석해줘. 주요 객체/텍스트/브랜드/맥락을 bullet로 간결히 요약해.',
             }),
           });

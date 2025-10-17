@@ -11,14 +11,30 @@ const MSG = {
 
 const $ = (sel) => document.querySelector(sel);
 
+// Elements
 const btnSelect = $('#btn-select');
 const btnAnalyze = $('#btn-analyze');
 const btnSave = $('#btn-save');
 const preview = $('#preview');
 const previewImg = $('#preview-img');
-const analysisPre = $('#analysis');
 const historyList = $('#history-list');
 const btnClearHistory = $('#btn-clear-history');
+const analysisCard = $('#analysis-card');
+const analysisThumb = $('#analysis-thumb');
+const analysisContent = $('#analysis-content');
+const modelSelect = $('#model');
+
+// Tone
+let currentTone = 'simple';
+document.querySelectorAll('.tone').forEach((btn) => {
+  btn.addEventListener('click', (e) => {
+    document
+      .querySelectorAll('.tone')
+      .forEach((x) => x.classList.remove('active'));
+    e.target.classList.add('active');
+    currentTone = e.target.dataset.tone;
+  });
+});
 
 let latestImagePayload = null;
 
@@ -26,15 +42,14 @@ init().catch(console.error);
 
 async function init() {
   wireTabs();
+
   btnSelect.addEventListener('click', onClickSelect);
   btnAnalyze.addEventListener('click', onClickAnalyze);
   btnSave.addEventListener('click', onClickSave);
+  btnClearHistory?.addEventListener('click', onClickClearHistory);
 
-  if (btnClearHistory) {
-    btnClearHistory.addEventListener('click', onClickClearHistory);
-  }
-
-  await loadLatest(); // 드래그 후 재오픈 시 미리보기 표시
+  await hydrateSettingsUI();
+  await loadLatest();
   await renderHistory();
 }
 
@@ -53,11 +68,20 @@ function wireTabs() {
   });
 }
 
+async function hydrateSettingsUI() {
+  const { WHIT_MODEL = 'gpt-4o-mini' } = await chrome.storage.local.get([
+    'WHIT_MODEL',
+  ]);
+  if (modelSelect) modelSelect.value = WHIT_MODEL;
+  modelSelect?.addEventListener('change', async () => {
+    await chrome.storage.local.set({ WHIT_MODEL: modelSelect.value });
+  });
+}
+
 async function onClickSelect() {
   const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-  if (tab?.id) {
+  if (tab?.id)
     await chrome.tabs.sendMessage(tab.id, { type: MSG.START_SELECTION });
-  }
   window.close();
 }
 
@@ -75,17 +99,44 @@ async function loadLatest() {
 
 async function onClickAnalyze() {
   if (!latestImagePayload?.imageDataUrl) return;
-  analysisPre.textContent = '분석 중...';
+
+  // UI: 준비
+  analysisCard.classList.remove('hidden');
+  analysisThumb.src = latestImagePayload.imageDataUrl;
+  analysisContent.innerHTML = `<div class="result-line"><span class="ico">⏳</span><div>분석 중...</div></div>`;
+
+  // 톤 프롬프트
+  const tonePrompts = {
+    simple: '간결하고 요점만 bullet로 요약해줘. (브랜드/텍스트/색상/맥락 중심)',
+    detail:
+      '텍스트, 로고, 색상, 브랜드, 구성요소, 의미를 항목별로 자세히 설명해줘.',
+    fun: '결과를 재미있고 가볍게, 하지만 핵심은 빠짐없이 bullet로 적어줘.',
+  };
+  const prompt = `이 이미지를 분석해줘. ${tonePrompts[currentTone]}`;
+
+  // (선택) 이미지 경량화 – 대략 1280px로 리사이즈, JPEG 0.8
+  const slim = await compressDataUrlToJpeg(
+    latestImagePayload.imageDataUrl,
+    1280,
+    0.8
+  );
+
   const resp = await chrome.runtime.sendMessage({
     type: MSG.ANALYZE_REQUEST,
-    dataUrl: latestImagePayload.imageDataUrl,
+    dataUrl: slim,
+    prompt,
   });
+
   if (resp?.ok) {
-    analysisPre.textContent = resp.result;
+    const html = renderAnalysisResult(resp.result);
+    analysisContent.innerHTML = html;
+    // 히스토리 저장
     await saveHistoryItem(latestImagePayload.imageDataUrl, resp.result);
     await renderHistory();
   } else {
-    analysisPre.textContent = `분석 실패: ${resp?.error || 'unknown'}`;
+    analysisContent.innerHTML = `<div class="result-line"><span class="ico">⚠️</span><div>${escapeHtml(
+      resp?.error || '분석 실패'
+    )}</div></div>`;
   }
 }
 
@@ -103,11 +154,8 @@ async function onClickClearHistory() {
   const yes = confirm('모든 기록을 삭제할까요? (되돌릴 수 없음)');
   if (!yes) return;
   const resp = await chrome.runtime.sendMessage({ type: MSG.CLEAR_HISTORY });
-  if (resp?.ok) {
-    await renderHistory();
-  } else {
-    alert('삭제 실패');
-  }
+  if (resp?.ok) await renderHistory();
+  else alert('삭제 실패');
 }
 
 async function saveHistoryItem(dataUrl, resultText = '') {
@@ -125,11 +173,8 @@ async function deleteHistoryItem(id) {
     type: MSG.DELETE_HISTORY_ITEM,
     id,
   });
-  if (resp?.ok) {
-    await renderHistory();
-  } else {
-    alert('항목 삭제 실패');
-  }
+  if (resp?.ok) await renderHistory();
+  else alert('항목 삭제 실패');
 }
 
 async function renderHistory() {
@@ -137,7 +182,6 @@ async function renderHistory() {
   if (!resp?.ok) return;
   const items = resp.items || [];
   historyList.innerHTML = '';
-
   if (items.length === 0) {
     historyList.innerHTML =
       '<div style="color:#6b7280; font-size:12px;">기록이 없습니다.</div>';
@@ -159,7 +203,6 @@ async function renderHistory() {
       </div>
     `;
     historyList.appendChild(el);
-
     const delBtn = el.querySelector('.del');
     delBtn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -167,6 +210,65 @@ async function renderHistory() {
       deleteHistoryItem(id);
     });
   });
+}
+
+/* ---------- Helpers ---------- */
+
+function renderAnalysisResult(resultText = '') {
+  // 간단한 아이콘 매핑
+  const mapping = {
+    브랜드: '🏷️',
+    텍스트: '✍️',
+    배경색: '🎨',
+    색상: '🌈',
+    로고: '🔖',
+    맥락: '🧭',
+  };
+
+  // 줄별 파싱 (기존 bullet 결과 가정)
+  const lines = resultText
+    .split('\n')
+    .map((s) => s.trim())
+    .filter(Boolean);
+
+  if (lines.length === 0) {
+    return `<div class="result-line"><span class="ico">💬</span><div>${escapeHtml(
+      resultText
+    )}</div></div>`;
+  }
+
+  const html = lines
+    .map((line) => {
+      const key = Object.keys(mapping).find((k) => line.includes(k));
+      const ico = key ? mapping[key] : '💬';
+      return `<div class="result-line"><span class="ico">${ico}</span><div>${escapeHtml(
+        line
+      )}</div></div>`;
+    })
+    .join('');
+
+  return html;
+}
+
+// PNG → JPEG 리사이즈/압축
+async function compressDataUrlToJpeg(dataUrl, maxSize = 1280, quality = 0.8) {
+  const img = await new Promise((res, rej) => {
+    const i = new Image();
+    i.onload = () => res(i);
+    i.onerror = rej;
+    i.src = dataUrl;
+  });
+  let { width, height } = img;
+  const scale =
+    Math.max(width, height) > maxSize ? maxSize / Math.max(width, height) : 1;
+  const w = Math.round(width * scale);
+  const h = Math.round(height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0, w, h);
+  return canvas.toDataURL('image/jpeg', quality);
 }
 
 function formatDate(d) {

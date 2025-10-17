@@ -1,4 +1,4 @@
-/* 기존 스타일들 ... */
+/* Base */
 body {
   font-family: ui-sans-serif, system-ui, -apple-system, 'Apple SD Gothic Neo',
     'Noto Sans KR', sans-serif;
@@ -40,43 +40,127 @@ main {
 .tab.active {
   display: block;
 }
-#btn-select,
-#btn-analyze,
-#btn-save {
+.hint {
+  color: #6b7280;
+  font-size: 12px;
+}
+
+/* Buttons */
+button {
+  cursor: pointer;
+}
+.primary {
   background: #4f46e5;
   color: #fff;
   border: none;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
-  cursor: pointer;
 }
-#btn-analyze {
+.dark {
   background: #111827;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
-#btn-save {
+.success {
   background: #059669;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 10px 12px;
 }
+.danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 10px;
+}
+
+/* Preview */
 .preview.hidden {
   display: none;
 }
 .preview img {
-  max-width: 100%;
-  border-radius: 8px;
+  width: 100%;
+  border-radius: 12px;
   border: 1px solid #eee;
 }
+
+/* Tone options */
+.tone-options {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 10px 0;
+}
+.tone-label {
+  font-size: 12px;
+  color: #374151;
+  margin-right: 4px;
+}
+.tone {
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+.tone.active {
+  background: #eef2ff;
+  color: #4f46e5;
+  border-color: #c7d2fe;
+}
+
+/* Actions */
 .actions {
   display: flex;
   gap: 8px;
-  margin: 10px 0;
+  margin: 8px 0 10px;
 }
-.analysis {
-  white-space: pre-wrap;
-  background: #f8fafc;
-  padding: 8px;
-  border-radius: 8px;
+
+/* Analysis card */
+.analysis-card {
+  background: #fff;
   border: 1px solid #eee;
-  max-height: 160px;
-  overflow: auto;
+  border-radius: 16px;
+  padding: 12px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+.analysis-card.hidden {
+  display: none;
+}
+.analysis-card .thumb {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid #f1f5f9;
+  margin-bottom: 10px;
+}
+.analysis-content {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.result-line {
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #f8fafc;
+  font-size: 13px;
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  line-height: 1.35;
+}
+.result-line .ico {
+  width: 18px;
+}
+
+/* History */
+.history-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
 }
 .history-list {
   display: grid;
@@ -84,6 +168,7 @@ main {
   gap: 8px;
 }
 .history-item {
+  position: relative;
   border: 1px solid #eee;
   border-radius: 10px;
   overflow: hidden;
@@ -97,27 +182,6 @@ main {
   padding: 6px;
   font-size: 11px;
   color: #374151;
-}
-.hint {
-  color: #6b7280;
-  font-size: 12px;
-}
-
-.history-toolbar {
-  display: flex;
-  justify-content: flex-end;
-  margin-bottom: 8px;
-}
-.history-toolbar .danger {
-  background: #ef4444;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 8px 10px;
-  cursor: pointer;
-}
-.history-item {
-  position: relative;
 }
 .history-item .del {
   position: absolute;
@@ -134,4 +198,13 @@ main {
 }
 .history-item .del:hover {
   opacity: 1;
+}
+
+/* Settings */
+.settings button {
+  background: #4f46e5;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 10px;
 }
